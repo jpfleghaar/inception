@@ -1,6 +1,8 @@
-This project has been created as part of the 42 curriculum by jpflegha
-
 # 📦 Inception 📦
+
+A small web infrastructure — NGINX (TLS), WordPress (php-fpm) and MariaDB — each in its own custom-built Docker container, orchestrated with Docker Compose.
+
+*This project has been created as part of the 42 curriculum by jpflegha.*
 
 ## Description
 Inception is a system administration project from 42 School that introduces containerization using Docker and Docker Compose. The goal is to set up a small, multi-service infrastructure entirely inside a virtual machine, where each service runs in its own dedicated container.
@@ -10,13 +12,13 @@ The project involves building and connecting three core services:
 - **WordPress** — the web application (with php-fpm)
 - **MariaDB** — the database backend
 
-All containers are built from custom Dockerfiles (based on Alpine or Debian) — no pre-built images from Docker Hub are allowed (except the base OS).
+All containers are built from custom Dockerfiles (based on `debian:bookworm-slim`) — no pre-built images from Docker Hub are allowed (except the base OS).
 
 ### 🐳 Why Docker?
 
 Docker allows us to package each service with all its dependencies into an isolated container. This makes the project reproducible, easy to configure, and cleanly separated — each service only does one thing.
 
-Docker Compose is used to define, link, and run all containers together from a single `docker-compose.yml` file.
+Docker Compose is used to define, link, and run all containers together from a single `docker-compose.yaml` file.
 
 ### Key Design Comparisons
 ### 🖥️ Virtual Machine vs Docker
@@ -80,7 +82,7 @@ If you use a distro without a GUI, you may also want to install:
 Clone the repository and go into the folder:
 
 ```bash
-git clone https://github.com/Lumelig/inception.git
+git clone https://github.com/jpfleghaar/inception.git
 cd inception
 ```
 
@@ -88,7 +90,8 @@ cd inception
 Before running the project, you need to:
 - **Configure a `.env` file with the environment variables** (there is an `example.env` with the empty variables)
 - **Make sure the required ports are available**
-- **Check the path for volumes**
+- **Check the path for volumes** — the volumes are bound to `/home/jpflegha/data/` in `src/docker-compose.yaml`; change the `device:` paths if your home directory is different
+- **Create the secret files** listed below in a `secrets/` folder at the repository root
 
 ### 📝 File Contents
 - `secrets/db_password.txt` - Password for the WordPress database user
@@ -110,7 +113,7 @@ Stop containers and remove the images:
 ```bash
 make clean
 ```
-Stop and remove volumes and network settings:
+Stop and remove volumes and network settings (warning: this prunes **all** Docker data on the machine):
 ```bash
 make fclean
 ```
@@ -118,9 +121,9 @@ Stop, remove and start again:
 ```bash
 make re
 ```
-Show the logs:
+Show the logs of all containers:
 ```bash
-make logs <docker_name>
+make logs
 ```
 
 If you want to use w3m, for the website:
@@ -130,6 +133,23 @@ w3m -o ssl_verify_server=0 https://localhost:443
 You can change the `localhost` with your `DOMAIN_NAME` from your .env file.
 
 
+### Project structure
+```
+inception/
+├── Makefile                  # make, stop, start, down, clean, fclean, re, ps, logs
+├── README.md / USER_DOC.md / DEV_DOC.md
+├── secrets/                  # not in git — create manually
+└── src/
+    ├── docker-compose.yaml
+    ├── example.env           # copy to src/.env and fill in
+    └── requirements/
+        ├── mariadb/          # Dockerfile, conf/my.cnf, tools/init.sh
+        ├── nginx/            # Dockerfile, conf/nginx.conf, tools/init.sh (self-signed TLS cert)
+        └── wordpress/        # Dockerfile, conf/www.conf, tools/init.sh (wp-cli setup)
+```
+
+More details: [USER_DOC.md](USER_DOC.md) (how to use it) and [DEV_DOC.md](DEV_DOC.md) (how it works).
+
 ### Notes
 - **Data is stored using Docker volumes to keep it persistent**
 - **Containers are automatically connected through a custom network**
@@ -137,18 +157,22 @@ You can change the `localhost` with your `DOMAIN_NAME` from your .env file.
 ---
 
 ### Resources 
-- **[Docker Docuentation](https://docs.docker.com/)**
+- **[Docker Documentation](https://docs.docker.com/)**
 - **[Docker Compose Documentation](https://docs.docker.com/compose/)**
 - **[NGINX Documentation](https://nginx.org/en/docs/)**
-- **[WordPress CLI Docuementation](https://wp-cli.org/)**
+- **[WordPress CLI Documentation](https://wp-cli.org/)**
 - **[MariaDB Documentation](https://mariadb.com/kb/en/)**
+
+### What I learned
+- Writing Dockerfiles from a bare Debian image and keeping images small
+- Running a service as PID 1 with an entrypoint script and `exec`
+- Initializing a database on first start and making it idempotent on restarts
+- Connecting containers over a private bridge network, with NGINX as the only exposed entry point
+- Handling credentials with Docker secrets instead of plain environment variables
+- Generating a self-signed TLS certificate and restricting NGINX to TLS 1.2/1.3
 
 ### Use of AI
 
 I used AI for research, explanations, bug fixing, and most importantly, finding typos and improving the overall quality of my work. It was especially helpful for understanding concepts more quickly and checking for small mistakes that I might have overlooked.
 
 However, the bug-fixing aspect was mostly unsuccessful. The AI tool I used was often unable to identify the actual source of the bugs or provide effective solutions. While it occasionally pointed me in the right direction, I still had to solve most of the technical issues myself. Despite this limitation, the AI was still useful as a general assistant for writing, proofreading, and research tasks.
-
-
-
-
