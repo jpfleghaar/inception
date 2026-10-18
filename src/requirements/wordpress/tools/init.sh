@@ -19,7 +19,6 @@ if [ ! -f "/var/www/html/wp-config.php" ]; then
     wp core download \
         --path=/var/www/html \
         --allow-root
-    # echo "DEBUG: MYSQL_USER=$MYSQL_USER, MYSQL_DATABASE=$MYSQL_DATABASE, DB_PASSWORD=$DB_PASSWORD"
     wp config create \
         --dbname=${MYSQL_DATABASE} \
         --dbuser=${MYSQL_USER} \
@@ -50,4 +49,3 @@ if [ ! -f "/var/www/html/wp-config.php" ]; then
 fi
 
 exec php-fpm8.2 -F
-#TODO

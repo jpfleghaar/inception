@@ -16,7 +16,7 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     MYSQLD_PID=$!
 
     until mysqladmin ping --silent; do
-        echo "hello"
+        echo "Waiting for MariaDB to start..."
         sleep 1
     done
 
