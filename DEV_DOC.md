@@ -4,7 +4,7 @@
 
 ### Prerequisites
 
-- A Linux VM running Debian (i used Alpine, without GUI)
+- A Linux VM (I used Alpine without a GUI; the install commands below are for Debian)
 
 ### 1. Install Docker
 
@@ -30,7 +30,7 @@ newgrp docker
 ### 2. Clone the repository
 
 ```bash
-git clone https://github.com/Lumelig/inception.git
+git clone https://github.com/jpfleghaar/inception.git
 cd inception
 ```
 
@@ -79,25 +79,25 @@ make
 ```
 
 This does the following:
-1. Creates host data directories, i `~/data/db` and `~/data/wp` if they don't exist
-2. Runs `docker compose -f srcs/docker-compose.yml up --build -d`
+1. Creates the host data directories `~/data/mariadb` and `~/data/wordpress` if they don't exist
+2. Runs `docker compose -f src/docker-compose.yaml up -d --build`
 3. Docker Compose builds each image from its Dockerfile and starts the containers
 
 ### What happens on first boot
 
-**MariaDB** (`srcs/requirements/mariadb/tools/init.sh`):
-- Starts `mysqld` in background with `--skip-networking`
+**MariaDB** (`src/requirements/mariadb/tools/init.sh`):
+- Starts `mysqld` in the background
 - Waits until the socket is ready
 - Creates the database, application user, sets root password
 - Kills the temporary instance, then `exec mysqld --user=mysql` as PID 1
 
-**WordPress** (`srcs/requirements/wordpress/tools/setup.sh`):
-- Downloads WordPress core files into the volume (if not already present)
+**WordPress** (`src/requirements/wordpress/tools/init.sh`):
 - Waits for MariaDB to accept TCP connections on port 3306
+- Downloads WordPress core files into the volume (if not already present)
 - Runs `wp config create` to generate `wp-config.php`
-- Runs `wp core install` — creates the admin user (`chuhlig`)
-- Creates a second user (`wp_editor`, role: author)
-- `exec php-fpm7.4 -F` as PID 1
+- Runs `wp core install` — creates the admin user (`WP_ADMIN_USER` from `.env`)
+- Creates a second user (`WP_USER` from `.env`, role: author)
+- `exec php-fpm8.2 -F` as PID 1
 
 **NGINX**:
 - Starts directly as PID 1 with `nginx -g daemon off;`
@@ -112,16 +112,14 @@ This does the following:
 
 ```bash
 # Show running containers
-docker compose -f srcs/docker-compose.yml ps
+make ps
 
-# Follow logs for all servidocker volume ls
-docker volume inspect srcs_wordpress_db_volume
-docker volume inspect srcs_wordpress_site_volumeces
+# Follow logs for all services
 make logs
 
 # Open a shell in a container
-make shell      # wordpress
-make db-shell   # mariadb
+docker exec -it wordpress bash
+docker exec -it mariadb bash
 
 # Stop containers (keep volumes and images)
 make down
@@ -132,20 +130,20 @@ make fclean
 
 ### Rebuilding a single service
 ```bash
-docker compose -f srcs/docker-compose.yml build wordpress
-docker compose -f srcs/docker-compose.yml up -d --no-deps wordpress
+docker compose -f src/docker-compose.yaml build wordpress
+docker compose -f src/docker-compose.yaml up -d --no-deps wordpress
 ```
 
 ---
 
 ## Data storage and persistence
 
-All persistent data is stored on the host under `$HOME/data/`:
+All persistent data is stored on the host under `/home/jpflegha/data/` (set in `src/docker-compose.yaml`; change the `device:` paths if your home directory is different):
 
 | Path on host | Docker volume | Container path | Contents |
 |---|---|---|---|
-| `~/data/db` | `srcs_wordpress_db_volume` | `/var/lib/mysql` | MariaDB database files |
-| `~/data/wp` | `srcs_wordpress_site_volume` | `/var/www/html` | WordPress files + uploads |
+| `/home/jpflegha/data/mariadb` | `mariadb` | `/var/lib/mysql` | MariaDB database files |
+| `/home/jpflegha/data/wordpress` | `wordpress` | `/var/www/html` | WordPress files + uploads |
 
 The volumes use `driver: local` with `driver_opts type: none, o: bind` — this is a named volume backed by a host directory (bind mount under the hood). This satisfies the project requirement of named volumes while keeping data at a predictable host location.
 
@@ -154,11 +152,11 @@ The volumes use `driver: local` with `driver_opts type: none, o: bind` — this 
 
 ```bash
 docker volume ls
-docker volume inspect srcs_wordpress_db_volume
-docker volume inspect srcs_wordpress_site_volume
+docker volume inspect mariadb
+docker volume inspect wordpress
 ```
 
-The `Mountpoint` in the output points to the Docker internal storage path, but the actual data is at `~/data/db` and `~/data/wp` on the host.
+The `Mountpoint` in the output points to the Docker internal storage path, but the actual data is at `/home/jpflegha/data/mariadb` and `/home/jpflegha/data/wordpress` on the host.
 
 ---
 
@@ -170,11 +168,11 @@ The `Mountpoint` in the output points to the Docker internal storage path, but t
 ├── secrets/                  # gitignored — create manually
 │   ├── credentials.txt
 │   ├── db_password.txt
-│   ├── db_root_password.txt
-│   └── wp_user_password.txt
-└── srcs/
+│   └── db_root_password.txt
+└── src/
     ├── .env                  # gitignored — create manually
-    ├── docker-compose.yml
+    ├── example.env           # template for .env
+    ├── docker-compose.yaml
     └── requirements/
         ├── mariadb/
         │   ├── Dockerfile

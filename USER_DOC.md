@@ -6,7 +6,7 @@ The Inception project starts three services:
 
 | Service | What it does | Where to find it |
 |---------|-------------|---------------|
-| **WordPress** | Your website | `https://pflegha.42.fr` |
+| **WordPress** | Your website | `https://jpflegha.42.fr` |
 | **WordPress Admin** | Admin dashboard | `https://jpflegha.42.fr/wp-admin` |
 | **MariaDB** | Database (internal only) | — |
 
@@ -26,13 +26,13 @@ Builds and starts all containers in the background.
 ```bash
 make stop
 ```
-Stops and removes containers. Your data stays safe.
+Stops the containers. Your data stays safe. Use `make start` to start them again, or `make down` to remove the containers.
 
 ### 🗑️ Full reset (deletes everything)
 ```bash
 make fclean
 ```
-Removes all containers, images, volumes, and **all data** in `/home/$(USER)/data/`. The next `make up` starts from scratch.
+Removes all containers, images, volumes, and **all data** in `/home/$(USER)/data/`. The next `make` starts from scratch. **Warning:** `fclean` runs `docker system prune -af` and removes *all* Docker volumes and networks on the machine, not only the ones from this project.
 
 ### 🔁 Rebuild
 ```bash
@@ -90,8 +90,8 @@ All credentials are stored in the `secrets/` folder at the root of the repositor
 
 | Role | Username | Password source |
 |------|----------|-----------------|
-| Administrator | `$(USER)` | `secrets/credentials.txt` |
-| Author | `wp_editor` | `secrets/credentials.txt` |
+| Administrator | `WP_ADMIN_USER` from `.env` | `secrets/credentials.txt` |
+| Author | `WP_USER` from `.env` | `secrets/credentials.txt` |
 
 ---
 
@@ -101,30 +101,30 @@ All credentials are stored in the `secrets/` folder at the root of the repositor
 ```bash
 docker ps
 ```
-If all three containers (`mariadb`, `wordpress`, `nginx`) Show `Up`. Everything is fine.
+If all three containers (`mariadb`, `wordpress`, `nginx`) show `Up`, everything is fine.
 
 ### logs
 ```bash
-make 📜 logs
+make logs
 ```
 ---
 ### 🔍 Individual docker logs
 ```bash
-docker logs src-mariadb-1
-docker logs src-wordpress-1
-docker logs src-nginx-1
+docker logs mariadb
+docker logs wordpress
+docker logs nginx
 ```
 
 ### 💾 Check volumes exist and contain data
 ```bash
 docker volume ls
-docker volume inspect src_wordpress
+docker volume inspect wordpress
 ```
 The `Mountpoint` field should show a path under `/home/$(USER)/data/`.
 
 ### 🗄️ Make sure MariaDB is reachable
 ```bash
- docker exec -it src-mariadb-1 mariadb -u wp_user -p wordpress
+ docker exec -it mariadb mariadb -u <MYSQL_USER> -p <MYSQL_DATABASE>
 # Enter the password from secrets/db_password.txt 
 SHOW TABLES;
 ```
